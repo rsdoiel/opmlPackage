@@ -1,3 +1,7 @@
+#### 12/9/24; 9:21:04 AM by DW
+
+Under some circumstances, sourcestruct in the parse routine will be undefined, so we check for it instead of crashing.
+
 #### 9/7/24; 9:59:57 AM by DW
 
 <a href="https://github.com/scripting/opmlPackage/blob/main/client/opml.js#L294">visitAll</a> in both client and server versions had a serious bug. 

@@ -1,4 +1,4 @@
-const myVersion = "0.5.6", myProductName = "opmlPackage"; 
+const myVersion = "0.5.7", myProductName = "opmlPackage"; 
 const generatorForHead = "opml v" + myVersion + " (npmjs.com/package/opml)";
 
 exports.parse = parse; 
@@ -18,6 +18,8 @@ const request = require ("request");
 
 function parse (opmltext, callback) { //returns a JavaScript object with all the info in the opmltext
 	//Changes
+		//12/9/24; 9:21:04 AM by DW
+			//Under some circumstances, sourcestruct in the convert routine will be undefined, so we check for it instead of crashing.
 		//12/27/21; 10:06:12 AM by DW
 			//Under some circumstances, xml2js.parseString will return a result of null. It shows up in Daytona's log. So we check for it, and if it comes up, return an error. 
 		//1/18/21; 10:21:27 AM by DW
@@ -40,41 +42,43 @@ function parse (opmltext, callback) { //returns a JavaScript object with all the
 			}
 		}
 	function convert (sourcestruct, deststruct) {
-		var atts = sourcestruct ["$"];
-		if (atts !== undefined) {
-			for (var x in atts) {
-				if (x != "subs") { //1/18/21 by DW
-					deststruct [x] = atts [x];
-					}
-				}
-			delete sourcestruct ["$"];
-			}
-		for (var x in sourcestruct) {
-			var obj = sourcestruct [x];
-			if (isScalar (obj)) {
-				deststruct [x] = obj;
-				}
-			else {
-				if (x == "outline") {
-					if (deststruct.subs === undefined) {
-						deststruct.subs = new Array ();
+		if (sourcestruct !== undefined) { //12/9/24 by DW
+			var atts = sourcestruct ["$"];
+			if (atts !== undefined) {
+				for (var x in atts) {
+					if (x != "subs") { //1/18/21 by DW
+						deststruct [x] = atts [x];
 						}
-					if (Array.isArray (obj)) {
-						for (var i = 0; i < obj.length; i++) {
+					}
+				delete sourcestruct ["$"];
+				}
+			for (var x in sourcestruct) {
+				var obj = sourcestruct [x];
+				if (isScalar (obj)) {
+					deststruct [x] = obj;
+					}
+				else {
+					if (x == "outline") {
+						if (deststruct.subs === undefined) {
+							deststruct.subs = new Array ();
+							}
+						if (Array.isArray (obj)) {
+							for (var i = 0; i < obj.length; i++) {
+								var newobj = new Object ();
+								convert (obj [i], newobj);
+								deststruct.subs.push (newobj);
+								}
+							}
+						else {
 							var newobj = new Object ();
-							convert (obj [i], newobj);
+							convert (obj, newobj);
 							deststruct.subs.push (newobj);
 							}
 						}
 					else {
-						var newobj = new Object ();
-						convert (obj, newobj);
-						deststruct.subs.push (newobj);
+						deststruct [x] = new Object ();
+						convert (obj, deststruct [x]);
 						}
-					}
-				else {
-					deststruct [x] = new Object ();
-					convert (obj, deststruct [x]);
 					}
 				}
 			}
